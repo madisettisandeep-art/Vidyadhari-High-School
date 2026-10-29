@@ -1,0 +1,15 @@
+{
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "typescript.validate.enable": true,
+  "javascript.validate.enable": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "problems.decorations.enabled": false,
+  "explorer.decorations.badges": false,
+  "explorer.decorations.colors": false,
+  "git.decorations.enabled": false
+}

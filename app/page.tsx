@@ -82,19 +82,13 @@ export default function HomePage() {
         </div>
 
         {/* 14: Admissions Funnel (Multi-Step Wizard) */}
-        <div className="section-defer">
-          <AdmissionsFunnel />
-        </div>
+        <AdmissionsFunnel />
 
         {/* 15: Book a Campus Walkthrough */}
-        <div className="section-defer">
-          <CampusVisitModal />
-        </div>
+        <CampusVisitModal />
 
         {/* 16: Campus Location, Directions & Phone */}
-        <div className="section-defer">
-          <ContactAndLocation />
-        </div>
+        <ContactAndLocation />
       </div>
     </div>
   );

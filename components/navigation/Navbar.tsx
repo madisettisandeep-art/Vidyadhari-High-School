@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Menu,
@@ -23,14 +23,50 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('');
+  const isNavigatingRef = useRef(false);
+
+  // Smooth scroll handler for nav tabs
+  const scrollToSection = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    setActiveSection(id);
+    setActiveDropdown(null);
+    isNavigatingRef.current = true;
+
+    const el = document.getElementById(id);
+    if (el) {
+      const yOffset = -90; // Fixed navbar clearance
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      window.history.pushState(null, '', `#${id}`);
+    }
+
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1200);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
+      if (isNavigatingRef.current) return;
+
       const heroEl = document.getElementById('hero-section');
       const isPast = heroEl ? heroEl.getBoundingClientRect().bottom <= 80 : window.scrollY > 100;
       setIsScrolledPastHero(isPast);
 
-      // Scrollspy detection
+      // 1. Critical: If user is viewing the hero section, NO nav tab should be highlighted!
+      const isHeroActive = heroEl ? heroEl.getBoundingClientRect().bottom > 180 : window.scrollY < 300;
+      if (isHeroActive) {
+        setActiveSection('');
+        return;
+      }
+
+      // Check if at the very bottom of the page
+      if (typeof window !== 'undefined' && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 50) {
+        setActiveSection('contact');
+        return;
+      }
+
+      // 2. Viewport-based Scrollspy detection (immune to offsetParent / CSS containment bugs)
       const sections = [
         'campus',
         'academics',
@@ -38,22 +74,26 @@ export default function Navbar() {
         'day-at-vidyadhari',
         'sports-and-arts',
         'achievements',
+        'life-at-vidyadhari',
         'admissions',
         'campus-visit',
         'contact'
       ];
 
-      const scrollPos = window.scrollY + 120;
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const el = document.getElementById(sections[i]);
-        if (el && el.offsetTop <= scrollPos) {
-          setActiveSection(sections[i]);
-          return;
+      let current = '';
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // Active when section top is near top navbar and bottom is still visible
+          if (rect.top <= 250 && rect.bottom >= 150) {
+            current = id;
+            break;
+          }
         }
       }
-      if (window.scrollY < 300) {
-        setActiveSection('');
-      }
+
+      setActiveSection(current);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -119,7 +159,7 @@ export default function Navbar() {
                 <div className="bg-white/98 backdrop-blur-xl border border-sky-100 rounded-2xl p-2 shadow-2xl shadow-[#002B66]/12 space-y-1">
                   <Link
                     href="#campus"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'campus')}
                     className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -137,7 +177,7 @@ export default function Navbar() {
 
                   <Link
                     href="#day-at-vidyadhari"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'day-at-vidyadhari')}
                     className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -155,7 +195,7 @@ export default function Navbar() {
 
                   <Link
                     href="#life-at-vidyadhari"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'life-at-vidyadhari')}
                     className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -212,7 +252,7 @@ export default function Navbar() {
                 <div className="bg-white/98 backdrop-blur-xl border border-sky-100 rounded-2xl p-2 shadow-2xl shadow-[#002B66]/12 space-y-1">
                   <Link
                     href="#academics"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'academics')}
                     className="flex items-start gap-3 p-2 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -230,7 +270,7 @@ export default function Navbar() {
 
                   <Link
                     href="#science"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'science')}
                     className="flex items-start gap-3 p-2 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -248,7 +288,7 @@ export default function Navbar() {
 
                   <Link
                     href="#sports-and-arts"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'sports-and-arts')}
                     className="flex items-start gap-3 p-2 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -266,7 +306,7 @@ export default function Navbar() {
 
                   <Link
                     href="#achievements"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'achievements')}
                     className="flex items-start gap-3 p-2 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -284,7 +324,7 @@ export default function Navbar() {
 
                   <Link
                     href="#faculty"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={(e) => scrollToSection(e, 'faculty')}
                     className="flex items-start gap-3 p-2 rounded-xl hover:bg-[#F0F7FF] text-[#002B66] hover:text-[#00A3E0] transition-colors group/item"
                   >
                     <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:border-[#00A3E0]">
@@ -305,11 +345,12 @@ export default function Navbar() {
 
             <Link
               href="#admissions"
+              onClick={(e) => scrollToSection(e, 'admissions')}
               className={`px-3.5 py-2 rounded-full text-xs xl:text-[13px] font-bold tracking-wide transition-all ${
                 activeSection === 'admissions'
                   ? isScrolledPastHero
-                    ? 'bg-[#F0F7FF] text-[#002B66] border border-[#00A3E0]/30'
-                    : 'bg-white/20 text-white border border-white/40'
+                    ? 'bg-[#F0F7FF] text-[#002B66] border border-[#00A3E0]/30 shadow-sm'
+                    : 'bg-white/20 text-white border border-white/40 shadow-sm'
                   : isScrolledPastHero
                   ? 'text-[#002B66] hover:text-[#00A3E0] hover:bg-[#F0F7FF]'
                   : 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] hover:text-[#00A3E0] hover:bg-white/10'
@@ -320,11 +361,12 @@ export default function Navbar() {
 
             <Link
               href="#contact"
+              onClick={(e) => scrollToSection(e, 'contact')}
               className={`px-3.5 py-2 rounded-full text-xs xl:text-[13px] font-bold tracking-wide transition-all ${
                 activeSection === 'contact'
                   ? isScrolledPastHero
-                    ? 'bg-[#F0F7FF] text-[#002B66] border border-[#00A3E0]/30'
-                    : 'bg-white/20 text-white border border-white/40'
+                    ? 'bg-[#F0F7FF] text-[#002B66] border border-[#00A3E0]/30 shadow-sm'
+                    : 'bg-white/20 text-white border border-white/40 shadow-sm'
                   : isScrolledPastHero
                   ? 'text-[#002B66] hover:text-[#00A3E0] hover:bg-[#F0F7FF]'
                   : 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] hover:text-[#00A3E0] hover:bg-white/10'
@@ -349,6 +391,7 @@ export default function Navbar() {
 
             <a
               href="#campus-visit"
+              onClick={(e) => scrollToSection(e, 'campus-visit')}
               className={`inline-flex items-center gap-2 px-4 xl:px-5 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all transform hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap shadow-md ${
                 isScrolledPastHero
                   ? 'text-white bg-gradient-to-r from-[#00A3E0] via-[#0284C7] to-[#002B66] hover:brightness-110 shadow-[#00A3E0]/25'
@@ -364,6 +407,7 @@ export default function Navbar() {
           <div className="flex lg:hidden items-center gap-2">
             <a
               href="#campus-visit"
+              onClick={(e) => scrollToSection(e, 'campus-visit')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase text-white bg-[#00A3E0] shadow-sm active:scale-95"
             >
               <Calendar className="w-3 h-3" />

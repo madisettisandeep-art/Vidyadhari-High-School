@@ -1,12 +1,18 @@
 'use client';
 
-import React from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import Navbar from './Navbar';
 import Footer from '@/components/footer/Footer';
-import WhatsAppWidget from '@/components/whatsapp/WhatsAppWidget';
-import AskVidyadhariAI from '@/components/ai/AskVidyadhariAI';
 import MobileStickyCTA from './MobileStickyCTA';
+
+// Split non-critical interactive floating widgets into deferred client chunks
+const WhatsAppWidget = dynamic(() => import('@/components/whatsapp/WhatsAppWidget'), {
+  ssr: false,
+});
+const AskVidyadhariAI = dynamic(() => import('@/components/ai/AskVidyadhariAI'), {
+  ssr: false,
+});
 
 export default function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

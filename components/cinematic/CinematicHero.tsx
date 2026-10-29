@@ -263,9 +263,12 @@ export default function CinematicHero(_props: CinematicHeroProps = {}) {
       ref={containerRef}
       className="relative w-full h-screen overflow-hidden bg-black select-none"
     >
-      {/* 9 Stacked Videos with Smooth Cross-Dissolve */}
+      {/* 9 Stacked Videos with Progressive Preloading & Cross-Dissolve */}
       {VIDEOS.map((src, index) => {
         const isActive = activeIndex === index;
+        const isNearby = Math.abs(activeIndex - index) <= 1;
+        const preloadStrategy = isActive ? 'auto' : isNearby ? 'metadata' : 'none';
+
         return (
           <video
             key={src}
@@ -276,8 +279,8 @@ export default function CinematicHero(_props: CinematicHeroProps = {}) {
             playsInline
             loop
             muted={isMuted}
-            autoPlay
-            preload="auto"
+            autoPlay={isActive}
+            preload={preloadStrategy}
             className={`absolute inset-0 w-full h-full object-cover scale-[1.08] origin-top-left transition-opacity duration-600 ease-in-out will-change-transform ${
               isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}

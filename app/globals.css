@@ -125,6 +125,12 @@
   .card-glow-blue:hover {
     box-shadow: 0 20px 40px -15px rgba(0, 163, 224, 0.3), 0 0 20px rgba(0, 163, 224, 0.2);
   }
+
+  /* Modern Web Performance: Defer off-screen rendering using content-visibility */
+  .section-defer {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 750px;
+  }
 }
 
 /* Hide Next.js Development "N" Logo Badge and Toasts Completely */

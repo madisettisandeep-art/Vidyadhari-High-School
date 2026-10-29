@@ -479,26 +479,94 @@ function ensureDataFile(): StoreData {
   return initialData;
 }
 
-function saveData(data: StoreData) {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.error("Failed to save store.json:", err);
+// High-Performance In-Memory Store with Debounced Persistence & Indexing
+let memoryStore: StoreData | null = null;
+let saveTimer: NodeJS.Timeout | null = null;
+const enquiryIndex = new Map<string, AdmissionEnquiry>();
+const visitIndex = new Map<string, CampusVisitBooking>();
+let cachedMetrics: any = null;
+
+function reindexStore(store: StoreData) {
+  enquiryIndex.clear();
+  visitIndex.clear();
+  for (const e of store.enquiries) {
+    enquiryIndex.set(e.id, e);
   }
+  for (const v of store.visits) {
+    visitIndex.set(v.id, v);
+  }
+  cachedMetrics = null; // Invalidate cached metrics
 }
 
-// In-Memory Cached Accessors with File-Persistence
-let memoryStore: StoreData | null = null;
+function saveData(data: StoreData) {
+  // Invalidate cached metrics
+  cachedMetrics = null;
+
+  // Debounced asynchronous disk flush: coalesces rapid writes and frees event loop
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  saveTimer = setTimeout(() => {
+    try {
+      const dir = path.dirname(DATA_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.promises.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8').catch((err) => {
+        console.error("Async save store.json error:", err);
+      });
+    } catch (err) {
+      console.error("Failed to schedule store.json save:", err);
+    }
+  }, 120);
+}
 
 export function getStore(): StoreData {
   if (!memoryStore) {
     memoryStore = ensureDataFile();
+    reindexStore(memoryStore);
   }
   return memoryStore;
+}
+
+export function getStoreMetrics() {
+  if (cachedMetrics) {
+    return cachedMetrics;
+  }
+  const store = getStore();
+  let newEnquiries = 0;
+  let contacted = 0;
+  let followUp = 0;
+  let campusVisits = 0;
+  let converted = 0;
+
+  // Single-pass O(N) aggregation instead of multiple linear filters
+  for (let i = 0; i < store.enquiries.length; i++) {
+    const status = store.enquiries[i].status;
+    if (status === 'NEW') newEnquiries++;
+    else if (status === 'CONTACTED') contacted++;
+    else if (status === 'FOLLOW-UP') followUp++;
+    else if (status === 'CAMPUS VISIT') campusVisits++;
+    else if (status === 'CONVERTED') converted++;
+  }
+
+  const totalEnquiries = store.enquiries.length;
+  const conversionRate = totalEnquiries > 0
+    ? ((converted / totalEnquiries) * 100).toFixed(1)
+    : '0.0';
+
+  cachedMetrics = {
+    totalEnquiries,
+    newEnquiries,
+    contacted,
+    followUp,
+    campusVisits: campusVisits + store.visits.length,
+    converted,
+    conversionRate: `${conversionRate}%`,
+    totalVisitsBooked: store.visits.length
+  };
+
+  return cachedMetrics;
 }
 
 export function updateSettings(newSettings: Partial<SchoolSettings>): SchoolSettings {
@@ -518,19 +586,20 @@ export function addEnquiry(enquiry: Omit<AdmissionEnquiry, 'id' | 'createdAt' | 
     createdAt: new Date().toISOString()
   };
   store.enquiries.unshift(newEnquiry);
+  enquiryIndex.set(newEnquiry.id, newEnquiry);
   saveData(store);
   return newEnquiry;
 }
 
 export function updateEnquiryStatus(id: string, status: AdmissionEnquiry['status'], adminNotes?: string): AdmissionEnquiry | null {
-  const store = getStore();
-  const target = store.enquiries.find(e => e.id === id);
+  getStore(); // Ensure initialized
+  const target = enquiryIndex.get(id); // O(1) indexed lookup
   if (!target) return null;
   target.status = status;
   if (adminNotes !== undefined) {
     target.adminNotes = adminNotes;
   }
-  saveData(store);
+  saveData(memoryStore!);
   return target;
 }
 
@@ -544,19 +613,20 @@ export function addCampusVisit(visit: Omit<CampusVisitBooking, 'id' | 'createdAt
     createdAt: new Date().toISOString()
   };
   store.visits.unshift(newVisit);
+  visitIndex.set(newVisit.id, newVisit);
   saveData(store);
   return newVisit;
 }
 
 export function updateVisitStatus(id: string, status: CampusVisitBooking['status'], adminNotes?: string): CampusVisitBooking | null {
-  const store = getStore();
-  const target = store.visits.find(v => v.id === id);
+  getStore(); // Ensure initialized
+  const target = visitIndex.get(id); // O(1) indexed lookup
   if (!target) return null;
   target.status = status;
   if (adminNotes !== undefined) {
     target.adminNotes = adminNotes;
   }
-  saveData(store);
+  saveData(memoryStore!);
   return target;
 }
 

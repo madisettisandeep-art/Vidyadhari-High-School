@@ -124,16 +124,33 @@ export default function AdminDashboardPage() {
     document.body.removeChild(link);
   };
 
+  // Debounced search state & pagination
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const filteredEnquiries = enquiries.filter(e => {
     const matchesSearch =
-      e.parentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.phone.includes(searchQuery);
+      !debouncedSearchQuery ||
+      e.parentName.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      e.studentName.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      e.id.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      e.phone.includes(debouncedSearchQuery);
 
     const matchesStatus = statusFilter === 'ALL' || e.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredEnquiries.length / pageSize));
+  const paginatedEnquiries = filteredEnquiries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const leadStatuses: LeadStatus[] = [
     'NEW',
@@ -226,9 +243,26 @@ export default function AdminDashboardPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+        {/* Animated Loading Skeletons */}
         {isLoading && (
-          <div className="text-center py-12 text-sm text-slate-500 font-medium">
-            Loading admissions & settings...
+          <div className="space-y-6 animate-pulse">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-20 rounded-xl bg-white border border-sky-100 shadow-sm p-4 flex flex-col justify-between">
+                  <div className="h-3 w-16 bg-slate-200 rounded" />
+                  <div className="h-6 w-12 bg-slate-200 rounded" />
+                </div>
+              ))}
+            </div>
+            <div className="h-96 rounded-2xl bg-white border border-sky-100 shadow-sm p-6 space-y-4">
+              <div className="h-8 w-48 bg-slate-200 rounded" />
+              <div className="h-12 w-full bg-slate-100 rounded-xl" />
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-10 w-full bg-slate-100 rounded-lg" />
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -321,7 +355,7 @@ export default function AdminDashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredEnquiries.map((enq) => (
+                    paginatedEnquiries.map((enq) => (
                       <tr key={enq.id} className="hover:bg-sky-50/50 transition-colors">
                         <td className="py-3 px-4 font-mono font-bold text-[#002B66]">
                           {enq.id}
@@ -377,6 +411,36 @@ export default function AdminDashboardPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Table Pagination Bar */}
+              {totalPages > 1 && (
+                <div className="p-3 bg-sky-50/70 border-t border-sky-200 flex items-center justify-between text-xs">
+                  <span className="text-slate-600 font-medium">
+                    Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredEnquiries.length)} of {filteredEnquiries.length} leads
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-sky-200 text-[#002B66] font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sky-100 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-slate-700 font-mono font-bold">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-sky-200 text-[#002B66] font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sky-100 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -13,7 +13,7 @@ import AdmissionsFunnel from '@/components/admissions/AdmissionsFunnel';
 import CampusVisitModal from '@/components/admissions/CampusVisitModal';
 import ContactAndLocation from '@/components/contact/ContactAndLocation';
 
-export const revalidate = 0; // Fresh CMS data on each reload
+export const revalidate = 60; // Cache and revalidate every 60s for high-speed edge delivery
 
 export default function HomePage() {
   const store = getStore();
@@ -34,43 +34,67 @@ export default function HomePage() {
         <div className="fixed inset-0 pointer-events-none -z-10 bg-white/20 backdrop-blur-[0.5px]" />
 
         {/* 03: Choose Your Journey */}
-        <ChooseJourney />
+        <div className="section-defer">
+          <ChooseJourney />
+        </div>
 
         {/* 04: Why Vidyadhari */}
-        <WhyVidyadhari />
+        <div className="section-defer">
+          <WhyVidyadhari />
+        </div>
 
         {/* 05: Interactive Campus (9 Destinations) */}
-        <CampusExperience locations={store.locations} />
+        <div className="section-defer">
+          <CampusExperience locations={store.locations} />
+        </div>
 
         {/* 06: Learning Beyond The Textbook (Academics) */}
-        <AcademicsSection />
+        <div className="section-defer">
+          <AcademicsSection />
+        </div>
 
         {/* 07: Science & Innovation (Dark Cinematic) */}
-        <ScienceSection />
+        <div className="section-defer">
+          <ScienceSection />
+        </div>
 
         {/* 08: A Day at Vidyadhari Timeline */}
-        <DayTimeline timeline={store.dayTimeline} />
+        <div className="section-defer">
+          <DayTimeline timeline={store.dayTimeline} />
+        </div>
 
         {/* 09 & 10: Sports, Physical Education & Arts & Culture */}
-        <SportsAndArts />
+        <div className="section-defer">
+          <SportsAndArts />
+        </div>
 
         {/* 11 & 12: Voices of Vidyadhari & Achievements Wall & Faculty */}
-        <VoicesAndAchievements
-          achievements={store.achievements}
-          faculty={store.faculty}
-        />
+        <div className="section-defer">
+          <VoicesAndAchievements
+            achievements={store.achievements}
+            faculty={store.faculty}
+          />
+        </div>
 
         {/* 13: Life @ Vidyadhari Gallery & Instagram */}
-        <GallerySection items={store.gallery} />
+        <div className="section-defer">
+          <GallerySection items={store.gallery} />
+        </div>
 
         {/* 14: Admissions Funnel (Multi-Step Wizard) */}
-        <AdmissionsFunnel />
+        <div className="section-defer">
+          <AdmissionsFunnel />
+        </div>
 
         {/* 15: Book a Campus Walkthrough */}
-        <CampusVisitModal />
+        <div className="section-defer">
+          <CampusVisitModal />
+        </div>
 
         {/* 16: Campus Location, Directions & Phone */}
-        <ContactAndLocation />
+        <div className="section-defer">
+          <ContactAndLocation />
+        </div>
       </div>
     </div>
   );

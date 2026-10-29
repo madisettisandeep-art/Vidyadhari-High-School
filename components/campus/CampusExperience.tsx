@@ -73,6 +73,8 @@ export default function CampusExperience({ locations }: CampusExperienceProps) {
               <img
                 src={currentLocation.image}
                 alt={currentLocation.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#001D47]/85 via-[#001D47]/20 to-transparent" />
